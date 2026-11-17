@@ -1,0 +1,79 @@
+x-bucket-env: &bucket-env
+  CELLD_BUCKET: s3://${BUCKET:-tldraw}
+  S3_ENDPOINT: ${S3_ENDPOINT:-http://seaweedfs:8333}
+  AWS_REGION: ${AWS_REGION:-us-east-1}
+  AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:?set S3_ACCESS_KEY in .env}
+  AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY in .env}
+
+services:
+  # S3-compatible store holding all durable state (rooms, uploads, deployments).
+  # enabled via COMPOSE_PROFILES=local-s3; drop that to use R2/S3/Tigris instead (see README).
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.54
+    profiles: [local-s3]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        printf '{"identities":[{"name":"celld","credentials":[{"accessKey":"%s","secretKey":"%s"}],"actions":["Admin","Read","Write","List","Tagging"]}]}' \
+          "$$S3_ACCESS_KEY" "$$S3_SECRET_KEY" > /tmp/s3.json
+        exec weed server -dir=/data -ip=seaweedfs -ip.bind=0.0.0.0 \
+          -master.volumeSizeLimitMB=1024 -volume.max=0 \
+          -s3 -s3.port=8333 -s3.config=/tmp/s3.json
+    environment:
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+    volumes:
+      - seaweedfs-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:8333/healthz"]
+      interval: 3s
+      retries: 40
+    restart: unless-stopped
+
+  create-bucket:
+    image: chrislusf/seaweedfs:4.54
+    profiles: [local-s3]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        out=$$(echo "s3.bucket.create -name ${BUCKET:-tldraw}" | weed shell -master=seaweedfs:9333 -filer=seaweedfs:8888 2>&1)
+        echo "$$out"
+        echo "$$out" | grep -qE "created bucket|already exists"
+    depends_on:
+      seaweedfs:
+        condition: service_healthy
+
+  # one-shot: build the app and upload it to the bucket. nodes pick it up without restarting.
+  deploy:
+    build: .
+    environment: *bucket-env
+    depends_on:
+      create-bucket:
+        condition: service_completed_successfully
+        required: false
+
+  celld:
+    image: ghcr.io/denoland/celld:${CELLD_VERSION:-v0.6.3}
+    command:
+      - --listen=0.0.0.0:8080
+      - --internal-listen=0.0.0.0:8081
+      - --advertise=celld:8081
+    environment:
+      <<: *bucket-env
+      CELLD_WATCH: /var/lib/celld/state
+      # hibernate idle rooms after 5 min so memory stays flat
+      CELLD_IDLE_EVICT_S: ${CELLD_IDLE_EVICT_S:-300}
+    volumes:
+      - celld-state:/var/lib/celld
+    ports:
+      - "${PORT:-8080}:8080"
+    # must exceed CELLD_SHUTDOWN_TOTAL_MS (40s) so rooms hand off cleanly
+    stop_grace_period: 60s
+    restart: unless-stopped
+    depends_on:
+      deploy:
+        condition: service_completed_successfully
+
+volumes:
+  seaweedfs-data:
+  celld-state:

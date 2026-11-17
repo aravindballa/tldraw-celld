@@ -1,0 +1,20 @@
+// celld reads this file on `celld deploy` / `celld dev`.
+// It accepts a subset of wrangler config: no `routes`, `observability`, etc.
+{
+	"name": "tldraw-sync",
+	"main": "worker/worker.ts",
+	"compatibility_date": "2026-01-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"assets": {
+		"directory": "./dist/client",
+		"not_found_handling": "single-page-application",
+		"run_worker_first": ["/api/*"]
+	},
+	// one Durable Object (celld "cell") per tldraw room
+	"durable_objects": {
+		"bindings": [{ "name": "TLDRAW_DURABLE_OBJECT", "class_name": "TldrawDurableObject" }]
+	},
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["TldrawDurableObject"] }],
+	// uploaded images/videos; stored in the fleet bucket under r2/tldraw-assets/
+	"r2_buckets": [{ "binding": "TLDRAW_BUCKET", "bucket_name": "tldraw-assets" }]
+}

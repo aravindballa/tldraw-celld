@@ -1,0 +1,6 @@
+node_modules
+dist
+.celld
+.dev.vars
+.env
+.env.local

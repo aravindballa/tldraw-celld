@@ -1,0 +1,43 @@
+{
+	"name": "tldraw-sync-celld",
+	"private": true,
+	"version": "0.0.0",
+	"license": "MIT",
+	"type": "module",
+	"packageManager": "pnpm@10.33.1",
+	"scripts": {
+		"dev": "concurrently -k -n worker,client -c blue,green \"pnpm dev:worker\" \"pnpm dev:client\"",
+		"dev:worker": "mkdir -p dist/client && CELLD_ESBUILD=./node_modules/.bin/esbuild celld dev --port 8787 --watch-ignore 'dist/**'",
+		"dev:client": "vite --host",
+		"build": "tsc -b && vite build",
+		"typecheck": "tsc -b",
+		"deploy": "CELLD_ESBUILD=./node_modules/.bin/esbuild celld deploy ."
+	},
+	"dependencies": {
+		"@tldraw/sync": "^5.6.1",
+		"@tldraw/sync-core": "^5.6.1",
+		"@tldraw/tlschema": "^5.6.1",
+		"cloudflare-workers-unfurl": "^0.0.9",
+		"itty-router": "^5.0.24",
+		"react": "^19.3.1",
+		"react-dom": "^19.3.1",
+		"react-router-dom": "^7.18.5",
+		"tldraw": "^5.6.1"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^5.20261117.1",
+		"@types/node": "^24.19.2",
+		"@types/react": "^19.3.0",
+		"@types/react-dom": "^19.3.0",
+		"@vitejs/plugin-react": "^6.3.0",
+		"concurrently": "^10.0.7",
+		"esbuild": "^0.28.2",
+		"typescript": "^5.9.3",
+		"vite": "^8.3.8"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"esbuild"
+		]
+	}
+}

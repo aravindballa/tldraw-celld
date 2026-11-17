@@ -1,0 +1,23 @@
+{
+	"compilerOptions": {
+		"composite": true,
+		"tsBuildInfoFile": "node_modules/.tmp/client.tsbuildinfo",
+		"target": "ES2022",
+		"useDefineForClassFields": true,
+		"lib": ["DOM", "DOM.Iterable", "ESNext"],
+		"module": "ESNext",
+		"skipLibCheck": true,
+		"moduleResolution": "bundler",
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+		"emitDeclarationOnly": true,
+		"declarationDir": "node_modules/.tmp/client-types",
+		"jsx": "react-jsx",
+		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noFallthroughCasesInSwitch": true,
+		"types": ["vite/client", "node"]
+	},
+	"include": ["client", "vite.config.ts"]
+}
