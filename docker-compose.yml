@@ -33,6 +33,7 @@ services:
   create-bucket:
     image: chrislusf/seaweedfs:4.54
     profiles: [local-s3]
+    restart: "no"
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
@@ -46,6 +47,7 @@ services:
   # one-shot: build the app and upload it to the bucket. nodes pick it up without restarting.
   deploy:
     build: .
+    restart: "no"
     environment: *bucket-env
     depends_on:
       create-bucket:
