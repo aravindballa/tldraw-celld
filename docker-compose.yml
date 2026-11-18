@@ -57,9 +57,12 @@ services:
   celld:
     image: ghcr.io/denoland/celld:${CELLD_VERSION:-v0.6.3}
     command:
-      - --listen=0.0.0.0:8080
-      - --internal-listen=0.0.0.0:8081
-      - --advertise=celld:8081
+      - --listen
+      - 0.0.0.0:8080
+      - --internal-listen
+      - 0.0.0.0:8081
+      - --advertise
+      - celld:8081
     environment:
       <<: *bucket-env
       CELLD_WATCH: /var/lib/celld/state
